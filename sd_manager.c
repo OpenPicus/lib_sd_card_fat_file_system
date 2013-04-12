@@ -91,11 +91,6 @@ static void setSdErr(int _err)
 	sdErr = _err;
 }
 
-int SDGetErr()
-{
-	return sdErr;
-}
-
 static void errManager()
 {
 	if (fRes == FR_NOT_READY)
@@ -136,8 +131,8 @@ BOOL SDOnNest(int _nest, BYTE _nTimeout)
  *	\param int pin_sck - pin used as SPI SCLK signal
  *	\param int pin_si  - pin used as SPI MISO signal
  *	\param int pin_so  - pin used as SPI MOSI  signal
- *	\param int pin_cs  - pin used as SPI SDCard Chip Select signal
- *	\param int pin_cd  - pin used as SPI SCCard Card Detect signal
+ *	\param int pin_cs  - pin used as SD Chip Select signal
+ *	\param int pin_cd  - pin used as SD Card Detect signal
  *	\param BYTE _nTimeout - timeout of operation (expressed in about 0.1 sec scale, 255 to wait forever)
  *	\return
  *	BOOL result of operation
@@ -208,6 +203,41 @@ BOOL SDUnMount()
 }
 
 /**
+ * Retrieve error number of last operation failed
+ * \return error number from a list
+<UL>
+	<LI>(0) Succeeded</LI>
+	<LI>(1) A hard error occured in the low level disk I/O layer</LI>
+	<LI>(2) Assertion failed</LI>
+	<LI>(3) The physical drive cannot work</LI>
+	<LI>(4) Could not find the file</LI>
+	<LI>(5) Could not find the path</LI>
+	<LI>(6) The path name format is invalid</LI>
+	<LI>(7) Acces denied due to prohibited access or directory full</LI>
+	<LI>(8) Acces denied due to prohibited access</LI>
+	<LI>(9) The file/directory object is invalid</LI>
+	<LI>(10) The physical drive is write protected</LI>
+	<LI>(11) The logical drive number is invalid</LI>
+	<LI>(12) The volume has no work area</LI>
+	<LI>(13) There is no valid FAT volume on the physical drive</LI>
+	<LI>(14) The f_mkfs() aborted due to any parameter error</LI>
+	<LI>(15) Could not get a grant to access the volume within defined period</LI>
+	<LI>(16) The operation is rejected according to the file shareing policy</LI>
+	<LI>(17) LFN working buffer could not be allocated</LI>
+	<LI>(18) Number of open files > _FS_SHARE</LI>
+	<LI>(20) SD library not Initialized</LI>
+	<LI>(21) SD card not present</LI>
+	<LI>(22) SD not ready</LI>
+	<LI>(23) File not found</LI>
+	<LI>(24) Generic Error</LI>
+</UL>
+ */
+int SDGetErr()
+{
+	return sdErr;
+}
+
+/**
  * Retrieve available free space on disk (in KB)
  * \return DWORD >0: amount of KB available
  * \return DWORD 0: operation failed (for example read only configuration set) or no available space left
@@ -239,7 +269,7 @@ DWORD SDFreeSpace()
  *
  *	\param char* nfile_check - char[] with filename to check
  *	\return TRUE - the file exists
- *	\return FALSE - The file doen't exist
+ *	\return FALSE - The file doesn't exist
  */
 BOOL SDFileCheck(char* nfile_check)
 {	
@@ -269,7 +299,7 @@ BOOL SDFileCheck(char* nfile_check)
 }
 
 /**
- *	Provides file size
+ *	Provides file size (in bytes)
  *
  *	\param char* nfile_size - char[] with filename to check
  *	\return	DWORD >=0 - file size
@@ -320,7 +350,10 @@ BOOL SDFileDateTime(char* nfile_tm, struct tm* SDtime)
 	char pathTemp[_MAX_LFN];
 	
 	SDDirGet(pathTemp, _MAX_LFN);
-	strcat(pathTemp, "/");
+	
+	int tempPathLen = strlen(pathTemp);
+	if(pathTemp[tempPathLen-1] != '/')
+		strcat(pathTemp, "/");
 	strcat(pathTemp, nfile_tm);
 	
 	SDtime->tm_hour = 0;
@@ -333,7 +366,7 @@ BOOL SDFileDateTime(char* nfile_tm, struct tm* SDtime)
    	SDtime->tm_yday = 0;
    	SDtime->tm_isdst = 0;
    	
-	#ifndef __RTCCLIB_H
+	#ifndef USE_RTCC_LIB
 		return FALSE;
 	#endif
 	
@@ -374,7 +407,7 @@ BOOL SDFileDateTime(char* nfile_tm, struct tm* SDtime)
 }
 
 /**
- *	Creates a file on current directory
+ *	Creates/overwrites a file on current directory
  *
  *	\param char* nfile_create - char[] with filename to create
  *	\return	TRUE - operation success
@@ -520,7 +553,7 @@ WORD SDFileRead(char* nfile_read, char* destBuff, unsigned long to_read)
 }
 
 /**
- * Reads data form a file
+ * Reads data form a file starting form a position
  *
  *	\param char* nfile_read - name of file to be read
  *	\param char* destBuff - buffer to fill with data read
@@ -632,12 +665,16 @@ BOOL SDDirGet(char* ndir_get, int size_max)
 	return FALSE;
 #else
 	fRes = f_getcwd(ndir_get, size_max);
+	
 	int t;
 	int ml = strlen(ndir_get);
-	for (t = 0; t < ml; t++)
-		ndir_get[t] = ndir_get[t+2];
-	ndir_get[ml-1] = '\0';
-	ndir_get[ml] = '\0';	
+	if(ml > 1)
+	{
+		for (t = 0; t < ml; t++)
+			ndir_get[t] = ndir_get[t+2];
+		ndir_get[ml-1] = '\0';
+		ndir_get[ml] = '\0';	
+	}
 	
 	if(fRes != FR_OK)
 	{
