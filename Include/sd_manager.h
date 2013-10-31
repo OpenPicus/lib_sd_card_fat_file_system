@@ -13,6 +13,11 @@
 
 #define SD_GROVE		1
 #define	SD_MUSIC		2
+#define _SD_END		-2
+#define _SD_ERR		-1
+#define	_SD_FILE	1
+#define _SD_DIR		2
+
 
 // INIT & TOOLS
 BOOL SDInit(int pin_sck, int pin_si, int pin_so, int pin_cs, int pin_cd, BYTE timeout);
@@ -50,5 +55,10 @@ WORD SDStreamReadAt(FIL* fobj, char* destBuff, unsigned long len, unsigned long 
 WORD SDStreamWrite(FIL* fobj, char *srcBuff, unsigned long to_write);
 BOOL SDStreamClose(FIL* fobj);
 BOOL SDStreamEOF(FIL* fobj);
+
+
+// SCAN
+int SDStartScan (char * path);
+int SDScanResults ( char *item);
 
 #endif

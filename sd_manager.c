@@ -81,6 +81,9 @@ static FILINFO fInfoObj;
 static BOOL sdInitOk = FALSE;
 static FRESULT fRes;
 static BOOL streamEof = FALSE;
+static FILINFO workfno;
+static DIR workdir;
+static BOOL scan_started = FALSE;
 
 //	Error handling
 static void setSdErr(int _err)
@@ -1009,6 +1012,77 @@ void SDdebug(char* str)
 }
 
 /// @endcond
+
+/**
+ * Starts a scan of the folder tree starting from the location passed as parameter
+ * \param char* path - path from which to start the scan process
+ * \return int - 0 if no error, -1 otherwise
+ */
+int SDStartScan (char * path)
+{
+	int retval;
+#if _USE_LFN
+    static char lfn[_MAX_LFN + 1];   /* Buffer to store the LFN */
+    workfno.lfname = lfn;
+    workfno.lfsize = sizeof lfn;
+#endif
+
+	fres = f_opendir(&workdir, path);                       /* Open the directory */
+	if (fres != FR_OK)
+		retval = _SD_ERR;
+	else
+	{
+		scan_started = TRUE;
+		retval = 0;
+	}
+		
+	return retval;		
+}
+
+
+/**
+ * Pulls results from a folder scan started with SDStartScan. Results are saved into the char array passed by parameter, while the return value depicts the kind of result or error/end_of_list conditions.
+ * \param char* item - pointer to a string to hold the name of the file or folder
+ * \return int - 1 File, 2 Directory, -1 error, -2 end of list
+ */
+int SDScanResults ( char *item)
+{				
+	int retval;
+repeat:
+	if (scan_started)
+	{
+		fres = f_readdir(&workdir, &workfno);                   /* Read a directory item */
+		/* Break on error or end of dir */
+		if (fres != FR_OK)
+		{
+			scan_started = FALSE;
+			return _SD_ERR;
+		}
+		if (workfno.fname[0] == 0)					
+		{
+			scan_started = FALSE;
+			return _SD_END;
+		}
+
+		if (workfno.fname[0] == '.') goto repeat;             /* Ignore dot entry */
+	#if _USE_LFN
+		strcpy(item, *workfno.lfname ? workfno.lfname : workfno.fname);
+		//fn = *fno.lfname ? fno.lfname : fno.fname;
+	#else
+		strcpy(item, workfno.name);
+		//fn = fno.fname;
+	#endif
+		if (workfno.fattrib & AM_DIR)                    /* It is a directory */
+			retval = _SD_DIR;
+		else                                       /* It is a file. */
+			retval = _SD_FILE;
+	
+		return retval;
+	}
+	else
+		return _SD_ERR;
+}
+
 
 /** @} */
 /** @} */
