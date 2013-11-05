@@ -1027,8 +1027,8 @@ int SDStartScan (char * path)
     workfno.lfsize = sizeof lfn;
 #endif
 
-	fres = f_opendir(&workdir, path);                       /* Open the directory */
-	if (fres != FR_OK)
+	fRes = f_opendir(&workdir, path);                       /* Open the directory */
+	if (fRes != FR_OK)
 		retval = _SD_ERR;
 	else
 	{
@@ -1051,9 +1051,9 @@ int SDScanResults ( char *item)
 repeat:
 	if (scan_started)
 	{
-		fres = f_readdir(&workdir, &workfno);                   /* Read a directory item */
+		fRes = f_readdir(&workdir, &workfno);                   /* Read a directory item */
 		/* Break on error or end of dir */
-		if (fres != FR_OK)
+		if (fRes != FR_OK)
 		{
 			scan_started = FALSE;
 			return _SD_ERR;
