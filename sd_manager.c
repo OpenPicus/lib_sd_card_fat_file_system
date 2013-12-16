@@ -360,7 +360,7 @@ BOOL SDFileDateTime(char* nfile_tm, struct tm* SDtime)
 		WORD thisTime = fInfoObj.ftime;
 		
 		SDtime->tm_sec = (int)((thisTime & 0x1F)*2);
-	   	SDtime->tm_min = (int)((thisTime >> 5)&0x1F);
+	   	SDtime->tm_min = (int)((thisTime >> 5)&0x3F);
 	   	SDtime->tm_hour = (int)((thisTime >> 11)&0x1F);
 		
 	   	SDtime->tm_mday = (int)(thisDate & 0x1F);
