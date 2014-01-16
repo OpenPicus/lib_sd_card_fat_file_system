@@ -142,11 +142,6 @@ BOOL SDInit(int pin_sck, int pin_si, int pin_so, int pin_cs, int pin_cd, BYTE ti
 	BYTE timecnt = 0;
 	//	SD hardware initialization
 	pinConfig(pin_sck, pin_si, pin_so, pin_cs, pin_cd);
-	
-	#if defined USE_RTCC_LIB
-	/* Start RTCC timer for SD Card Service */
-		RTCCAlarmSet(TRUE);
-	#endif
 			
 	SDdebug("Initializing SD card...\r\n");
 
@@ -546,6 +541,7 @@ WORD SDFileRead(char* nfile_read, char* destBuff, unsigned long to_read)
 			return len;
 		}
 		fileClose(&fObj);
+
 		return len;
 	}
 	else
@@ -1085,39 +1081,50 @@ int SDStartScan (char * path)
 int SDScanResults ( char *item)
 {				
 	int retval;
-repeat:
-	if (scan_started)
-	{
-		fRes = f_readdir(&workdir, &workfno);                   /* Read a directory item */
-		/* Break on error or end of dir */
-		if (fRes != FR_OK)
-		{
-			scan_started = FALSE;
-			return _SD_ERR;
-		}
-		if (workfno.fname[0] == 0)					
-		{
-			scan_started = FALSE;
-			return _SD_END;
-		}
-
-		if (workfno.fname[0] == '.') goto repeat;             /* Ignore dot entry */
-	#if _USE_LFN
-		strcpy(item, *workfno.lfname ? workfno.lfname : workfno.fname);
-		//fn = *fno.lfname ? fno.lfname : fno.fname;
-	#else
-		strcpy(item, workfno.name);
-		//fn = fno.fname;
-	#endif
-		if (workfno.fattrib & AM_DIR)                    /* It is a directory */
-			retval = _SD_DIR;
-		else                                       /* It is a file. */
-			retval = _SD_FILE;
+	BOOL repeat;
 	
-		return retval;
-	}
-	else
-		return _SD_ERR;
+	do
+	{
+		repeat = FALSE;
+		if (scan_started)
+		{
+			fRes = f_readdir(&workdir, &workfno);	// Read a directory item */
+			// Break on error or end of dir
+			if (fRes != FR_OK)
+			{
+				scan_started = FALSE;
+				return _SD_ERR;
+			}
+			if (workfno.fname[0] == 0)					
+			{
+				scan_started = FALSE;
+				return _SD_END;
+			}
+
+			if (workfno.fname[0] == '.')
+			{
+				repeat = TRUE;
+			}
+			else
+			{
+				#if _USE_LFN
+				strcpy(item, *workfno.lfname ? workfno.lfname : workfno.fname);
+				//fn = *fno.lfname ? fno.lfname : fno.fname;
+				#else
+				strcpy(item, workfno.name);
+				//fn = fno.fname;
+				#endif
+				if (workfno.fattrib & AM_DIR)// It is a directory
+					retval = _SD_DIR;
+				else                         // It is a file.
+					retval = _SD_FILE;
+				return retval;
+			}
+		}
+		else
+			return _SD_ERR;
+	}while(repeat);
+	return _SD_ERR;
 }
 
 
