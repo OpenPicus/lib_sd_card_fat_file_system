@@ -13,6 +13,7 @@
 
 #define SD_GROVE		1
 #define	SD_MUSIC		2
+#define SD_GROVE_PRO	3
 #define _SD_END		-2
 #define _SD_ERR		-1
 #define	_SD_FILE	1
