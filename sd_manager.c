@@ -119,7 +119,7 @@ BOOL SDOnNest(int _nest, BYTE _nTimeout)
 		return SDInit(p18, p7, p17, p9, p19, _nTimeout);
 	else if(_nest == SD_MUSIC)
 		return SDInit(p8, p12, p10, p7, p5, _nTimeout);
-	else if(_nest == SD_GROVE_PRO)
+	else if(_nest == SD_IOT_BOARD)
 		return SDInit(p7, p3, p1, p5, p11, _nTimeout);
 	else
 		return FALSE;
